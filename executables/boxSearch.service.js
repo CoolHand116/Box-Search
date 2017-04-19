@@ -1,34 +1,18 @@
-tatool.factory('boxSearch', [ 'executableUtils',
-  function (executableUtils) {  
+tatool.factory('boxSearch', [ 'executableUtils', 'stimulusServiceFactory', 'inputServiceFactory', 'dbUtils',
+  function (executableUtils, stimulusServiceFactory, inputServiceFactory, dbUtils) {  
 
     var BoxSearch = executableUtils.createExecutable();
 
     BoxSearch.prototype.init = function() {
 	var promise = executableUtils.createPromise();
 	
-	//manually define resource for stimuliFile		
-	var stimuliFile ={
-		project: {
-			name: 'boxSearch',
-			access: 'public'
-		},
-		resourceType: 'stimuli',
-		resourceName: 'boxSearch.csv'
-	};
+	this.counter = 0;
+	this.stimulusService = stimulusServiceFactory.createService(this.stimuliPath);
+	this.inputService = inputServiceFactory.createService(this.stimuliPath);
 
-	//manually define path for stimuliPath
-	var stimuliPath = {
-		project: {
-			name: 'boxSearch',
-			access: 'public'
-		},
-		resourceType: 'stimuli'
-	};
-
-	//read stimuliFile and all image stimuli
 	//resolve promise when reading successful and reject when an error occurred
 	var self = this;
-	executableUtils.getCSVResource(stimuliFile, true, stimuliPath).then(
+	executableUtils.getCSVResource(this.stimuliFile, true, this.stimuliPath).then(
 		function(list) {
 			self.stimuliList = list;
 			console.log('stimuliList Length: ', self.stimuliList.length);
@@ -42,9 +26,30 @@ tatool.factory('boxSearch', [ 'executableUtils',
     };
 
     // our custom methods go here
-    BoxSearch.prototype.stopExecution = function() {
-      executableUtils.stop();
+    BoxSearch.prototype.createStimulus = function() {
+    	var stimulus = executableUtils.getNext(this.stimuliList, this.counter);
+    	this.stimulusService.set(stimulus);
+    	this.counter++;
+
+    	this.trial={};
+    	this.trial.stimulusType = stimulus.stimulusType;
+    	this.trial.stimulusValue = stimulus.stimulusValue;
+    	this.trial.correctResponse = stimulus.correctResponse;
     };
+
+    BoxSearch.prototype.processResponse = function(response) {
+      this.trial.reactionTime = this.endTime - this.startTime; 
+      this.trial.givenResponse = response;
+      if (this.trial.correctResponse == this.trial.givenResponse) {
+        this.trial.score = 1;
+      } else {
+        this.trial.score = 0;
+      }
+      dbUtils.saveTrial(this.trial).then(executableUtils.stop);
+    };
+    /*BoxSearch.prototype.stopExecution = function() {
+      executableUtils.stop();
+    };*/
 
     return BoxSearch;
   }]);

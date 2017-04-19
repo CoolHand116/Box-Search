@@ -1,5 +1,5 @@
 stimulusType;stimulusValue;stimulusValueType;CorrectResponse
-blueBox;blueBox.png;image;true;
+blueBox;blueBox.jpeg;image;true;
 blueCircle;blueCircle.png;image;false;
 redBox;redBox.png;image;false;
-redCircle;redCircle.png;image;false;
+redCircle;redCircle.jpeg;image;false;
